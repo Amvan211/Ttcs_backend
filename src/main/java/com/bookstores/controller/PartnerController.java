@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 @RestController
 @RequestMapping("/api/partner")
@@ -64,5 +65,12 @@ public class PartnerController {
     @GetMapping("/stats")
     public ResponseEntity<IncomeStat> stats() {
         return ResponseEntity.ok(partnerService.stats());
+    }
+
+    @PreAuthorize("hasRole('PARTNER')")
+    @DeleteMapping("/books/{id}")
+    public ResponseEntity<String> deleteBook(@PathVariable Integer id) {
+        partnerService.deleteBook(id);
+        return ResponseEntity.ok("Đã xóa sách thành công!");
     }
 }

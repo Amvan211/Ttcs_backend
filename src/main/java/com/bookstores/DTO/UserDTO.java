@@ -20,6 +20,7 @@ public class UserDTO {
     private String phone;
     private String status;
     private String roleName;
+    private String avatarUrl;
 
     public static UserDTO fromEntity(User u) {
         return UserDTO.builder()
@@ -30,6 +31,7 @@ public class UserDTO {
                 .phone(u.getPhone())
                 .status(u.getStatus())
                 .roleName(ApiRoleNames.toApi(u.getRole() != null ? u.getRole().getRoleName() : null))
+                .avatarUrl(u.getAvatarUrl())
                 .build();
     }
 }

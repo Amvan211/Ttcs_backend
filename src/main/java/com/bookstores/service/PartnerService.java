@@ -21,5 +21,7 @@ public interface PartnerService {
 
     IncomeStat stats();
 
+    void deleteBook(Integer bookId);
+
     List<OrderDTO> listOrdersForPartner();
 }

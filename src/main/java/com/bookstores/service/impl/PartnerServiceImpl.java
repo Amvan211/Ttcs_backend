@@ -113,6 +113,17 @@ public class PartnerServiceImpl implements PartnerService {
 
     @Override
     @Transactional
+    public void deleteBook(Integer bookId) {
+        Partner p = currentPartnerOrThrow();
+        Book b = bookRepository.findById(bookId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
+        if (!b.getPartner().getId().equals(p.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not authorized to delete this book");
+        }
+        bookRepository.delete(b);
+    }
+
+    @Override
+    @Transactional
     public OrderDTO updateOrderStatus(Integer orderId, OrderStatusUpdateRequest req) {
         Partner p = currentPartnerOrThrow();
         if (!orderRepository.existsByIdAndPartner(orderId, p.getId())) {
