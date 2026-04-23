@@ -60,6 +60,7 @@ public class AuthServiceImpl implements AuthService {
                 .roleName(apiRole)
                 .fullName(u.getFullName())
                 .mail(u.getMail())
+                .avatarUrl(u.getAvatarUrl())
                 .build();
     }
 
@@ -97,6 +98,7 @@ public class AuthServiceImpl implements AuthService {
                 .roleName(apiRole)
                 .fullName(u.getFullName())
                 .mail(u.getMail())
+                .avatarUrl(u.getAvatarUrl())
                 .build();
     }
 }

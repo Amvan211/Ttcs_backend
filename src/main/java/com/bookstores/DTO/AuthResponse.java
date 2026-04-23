@@ -19,4 +19,5 @@ public class AuthResponse {
     /** Display name — khớp trường name trên front_end. */
     private String fullName;
     private String mail;
+    private String avatarUrl;
 }

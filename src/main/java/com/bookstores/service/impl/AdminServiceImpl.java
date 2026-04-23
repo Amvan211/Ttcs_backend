@@ -1,19 +1,31 @@
 package com.bookstores.service.impl;
 
 import com.bookstores.DTO.AdminViewModels;
+import com.bookstores.DTO.AdminBookUpsertRequest;
+import com.bookstores.DTO.AdminCategoryUpsertRequest;
+import com.bookstores.DTO.AdminOrderUpsertRequest;
+import com.bookstores.DTO.AdminUserUpsertRequest;
 import com.bookstores.DTO.BookApproveRequest;
 import com.bookstores.DTO.BookDTO;
+import com.bookstores.DTO.CategoryListDTO;
+import com.bookstores.DTO.OrderDTO;
 import com.bookstores.DTO.UserDTO;
 import com.bookstores.common.ApiRoleNames;
 import com.bookstores.common.DomainConstants;
 import com.bookstores.entity.Book;
+import com.bookstores.entity.Category;
 import com.bookstores.entity.Order;
 import com.bookstores.entity.OrderItem;
+import com.bookstores.entity.Partner;
 import com.bookstores.entity.Review;
+import com.bookstores.entity.Role;
 import com.bookstores.entity.User;
 import com.bookstores.repository.BookRepository;
+import com.bookstores.repository.CategoryRepository;
 import com.bookstores.repository.OrderItemRepository;
 import com.bookstores.repository.OrderRepository;
+import com.bookstores.repository.PartnerRepository;
+import com.bookstores.repository.RoleRepository;
 import com.bookstores.repository.ReviewRepository;
 import com.bookstores.repository.UserRepository;
 import com.bookstores.service.AdminService;
@@ -28,6 +40,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -38,22 +51,34 @@ public class AdminServiceImpl implements AdminService {
     private static final DateTimeFormatter ORDER_DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final CategoryRepository categoryRepository;
+    private final PartnerRepository partnerRepository;
     private final BookRepository bookRepository;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final ReviewRepository reviewRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public AdminServiceImpl(
             UserRepository userRepository,
+            RoleRepository roleRepository,
+            CategoryRepository categoryRepository,
+            PartnerRepository partnerRepository,
             BookRepository bookRepository,
             OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
-            ReviewRepository reviewRepository) {
+            ReviewRepository reviewRepository,
+            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.categoryRepository = categoryRepository;
+        this.partnerRepository = partnerRepository;
         this.bookRepository = bookRepository;
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.reviewRepository = reviewRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -64,11 +89,104 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     @Transactional
+    public UserDTO createUser(AdminUserUpsertRequest req) {
+        if (req.getUsername() == null || req.getUsername().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "username is required");
+        }
+        if (req.getPassword() == null || req.getPassword().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "password is required");
+        }
+        if (userRepository.findByUsername(req.getUsername().trim()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username taken");
+        }
+        User u = new User();
+        applyUserUpsert(u, req, true);
+        return UserDTO.fromEntity(userRepository.save(u));
+    }
+
+    @Override
+    @Transactional
+    public UserDTO updateUser(Integer id, AdminUserUpsertRequest req) {
+        var u = userRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        applyUserUpsert(u, req, false);
+        return UserDTO.fromEntity(userRepository.save(u));
+    }
+
+    @Override
+    @Transactional
     public UserDTO lockUser(Integer id) {
         var u = userRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         u.setStatus(DomainConstants.USER_LOCKED);
         u = userRepository.save(u);
         return UserDTO.fromEntity(u);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(Integer id) {
+        var u = userRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        userRepository.delete(u);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CategoryListDTO> listCategories() {
+        return categoryRepository.findAll().stream().map(this::toCategoryRow).toList();
+    }
+
+    @Override
+    @Transactional
+    public CategoryListDTO createCategory(AdminCategoryUpsertRequest req) {
+        String name = req.getName().trim();
+        if (categoryRepository.findByCategoryName(name).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Category exists");
+        }
+        Category c = Category.builder().categoryName(name).build();
+        return toCategoryRow(categoryRepository.save(c));
+    }
+
+    @Override
+    @Transactional
+    public CategoryListDTO updateCategory(Integer id, AdminCategoryUpsertRequest req) {
+        Category c = categoryRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        c.setCategoryName(req.getName().trim());
+        return toCategoryRow(categoryRepository.save(c));
+    }
+
+    @Override
+    @Transactional
+    public void deleteCategory(Integer id) {
+        Category c = categoryRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        categoryRepository.delete(c);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookDTO> listBooks() {
+        return bookRepository.findAll().stream().map(BookDTO::fromEntity).toList();
+    }
+
+    @Override
+    @Transactional
+    public BookDTO createBook(AdminBookUpsertRequest req) {
+        Book b = new Book();
+        applyBookUpsert(b, req, true);
+        return BookDTO.fromEntity(bookRepository.save(b));
+    }
+
+    @Override
+    @Transactional
+    public BookDTO updateBook(Integer id, AdminBookUpsertRequest req) {
+        Book b = bookRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        applyBookUpsert(b, req, false);
+        return BookDTO.fromEntity(bookRepository.save(b));
+    }
+
+    @Override
+    @Transactional
+    public void deleteBook(Integer id) {
+        Book b = bookRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        bookRepository.delete(b);
     }
 
     @Override
@@ -93,6 +211,56 @@ public class AdminServiceImpl implements AdminService {
         }
         b = bookRepository.save(b);
         return BookDTO.fromEntity(b);
+    }
+
+    @Override
+    @Transactional
+    public OrderDTO createOrder(AdminOrderUpsertRequest req) {
+        User user =
+                userRepository
+                        .findById(req.getUserId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown user"));
+        Order o = Order.builder()
+                .user(user)
+                .orderDate(java.time.LocalDateTime.now())
+                .status(req.getStatus() == null || req.getStatus().isBlank() ? DomainConstants.ORDER_NEW : req.getStatus().trim())
+                .note(req.getNote())
+                .totalAmount(0d)
+                .build();
+        o = orderRepository.save(o);
+        replaceOrderItems(o, req.getItems());
+        return OrderDTO.fromEntity(o);
+    }
+
+    @Override
+    @Transactional
+    public OrderDTO updateOrder(Integer id, AdminOrderUpsertRequest req) {
+        Order o = orderRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (req.getUserId() != null) {
+            User user = userRepository.findById(req.getUserId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown user"));
+            o.setUser(user);
+        }
+        if (req.getStatus() != null && !req.getStatus().isBlank()) {
+            o.setStatus(req.getStatus().trim());
+        }
+        if (req.getNote() != null) {
+            o.setNote(req.getNote());
+        }
+        if (req.getItems() != null) {
+            replaceOrderItems(o, req.getItems());
+        } else {
+            orderRepository.save(o);
+        }
+        return OrderDTO.fromEntity(o);
+    }
+
+    @Override
+    @Transactional
+    public void deleteOrder(Integer id) {
+        Order o = orderRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        orderItemRepository.deleteByOrder_Id(o.getId());
+        orderRepository.delete(o);
     }
 
     @Override
@@ -270,5 +438,118 @@ public class AdminServiceImpl implements AdminService {
         sym.setGroupingSeparator('.');
         DecimalFormat df = new DecimalFormat("#,###", sym);
         return df.format(Math.round(amount)) + "đ";
+    }
+
+    private CategoryListDTO toCategoryRow(Category c) {
+        long n = bookRepository.countByCategory_Id(c.getId());
+        return CategoryListDTO.builder()
+                .categoryId(c.getId())
+                .id(c.getCategoryName())
+                .label(c.getCategoryName())
+                .count(n + " Titles")
+                .build();
+    }
+
+    private void applyUserUpsert(User user, AdminUserUpsertRequest req, boolean creating) {
+        if (creating || req.getUsername() != null) {
+            user.setUsername(req.getUsername().trim());
+        }
+        if (creating || req.getPassword() != null) {
+            String raw = req.getPassword();
+            if (raw == null || raw.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "password is required");
+            }
+            user.setPassword(passwordEncoder.encode(raw));
+        }
+        if (req.getFullName() != null) user.setFullName(req.getFullName());
+        if (req.getMail() != null) user.setMail(req.getMail());
+        if (req.getPhone() != null) user.setPhone(req.getPhone());
+        if (req.getAvatarUrl() != null) user.setAvatarUrl(req.getAvatarUrl());
+        if (req.getStatus() != null && !req.getStatus().isBlank()) user.setStatus(req.getStatus().trim());
+        if (creating && (user.getStatus() == null || user.getStatus().isBlank())) {
+            user.setStatus(DomainConstants.USER_ACTIVE);
+        }
+        String roleName = req.getRoleName();
+        if (roleName != null && !roleName.isBlank()) {
+            user.setRole(resolveRole(roleName));
+        } else if (creating && user.getRole() == null) {
+            user.setRole(resolveRole(DomainConstants.ROLE_READER));
+        }
+    }
+
+    private Role resolveRole(String roleName) {
+        String normalized = roleName.trim().toUpperCase(Locale.ROOT);
+        if ("READER".equals(normalized)) normalized = DomainConstants.ROLE_READER;
+        if ("CUSTOMER".equals(normalized)) normalized = DomainConstants.ROLE_CUSTOMER;
+        if ("ADMIN".equals(normalized)) normalized = DomainConstants.ROLE_ADMIN;
+        if ("PARTNER".equals(normalized)) normalized = DomainConstants.ROLE_PARTNER;
+        final String dbRole = normalized;
+        return roleRepository.findByRoleName(dbRole)
+                .or(() -> {
+                    if (DomainConstants.ROLE_READER.equals(dbRole)) {
+                        return roleRepository.findByRoleName(DomainConstants.ROLE_CUSTOMER);
+                    }
+                    return java.util.Optional.empty();
+                })
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown role: " + roleName));
+    }
+
+    private void applyBookUpsert(Book book, AdminBookUpsertRequest req, boolean creating) {
+        if ((creating || req.getTitle() != null) && (req.getTitle() == null || req.getTitle().isBlank())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "title is required");
+        }
+        if ((creating || req.getPrice() != null) && req.getPrice() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "price is required");
+        }
+        if (creating || req.getTitle() != null) book.setTitle(req.getTitle().trim());
+        if (req.getAuthor() != null) book.setAuthor(req.getAuthor());
+        if (creating || req.getPrice() != null) book.setPrice(req.getPrice());
+        if (req.getStockQuantity() != null) book.setStockQuantity(req.getStockQuantity());
+        if (req.getDescription() != null) book.setDescription(req.getDescription());
+        if (req.getCoverImageUrl() != null) book.setCoverImageUrl(req.getCoverImageUrl());
+        if (req.getApprovalStatus() != null && !req.getApprovalStatus().isBlank()) {
+            book.setApprovalStatus(req.getApprovalStatus().trim());
+        } else if (creating && (book.getApprovalStatus() == null || book.getApprovalStatus().isBlank())) {
+            book.setApprovalStatus(DomainConstants.APPROVAL_APPROVED);
+        }
+        if (req.getCategoryId() != null) {
+            Category c = categoryRepository.findById(req.getCategoryId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown category"));
+            book.setCategory(c);
+        } else if (creating) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "categoryId is required");
+        }
+        if (req.getPartnerId() != null) {
+            Partner p = partnerRepository.findById(req.getPartnerId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown partner"));
+            book.setPartner(p);
+        }
+    }
+
+    private void replaceOrderItems(Order order, List<AdminOrderUpsertRequest.Line> items) {
+        if (items == null || items.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "items is required");
+        }
+        orderItemRepository.deleteByOrder_Id(order.getId());
+        List<OrderItem> persisted = new ArrayList<>();
+        double total = 0d;
+        for (AdminOrderUpsertRequest.Line line : items) {
+            if (line.getBookId() == null || line.getQuantity() == null || line.getQuantity() <= 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid line item");
+            }
+            Book b = bookRepository.findById(line.getBookId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown book"));
+            OrderItem oi = OrderItem.builder()
+                    .order(order)
+                    .book(b)
+                    .quantity(line.getQuantity())
+                    .price(b.getPrice())
+                    .build();
+            persisted.add(orderItemRepository.save(oi));
+            total += b.getPrice() * line.getQuantity();
+        }
+        order.setOrderItems(persisted);
+        order.setTotalAmount(total);
+        orderRepository.save(order);
     }
 }

@@ -7,6 +7,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface OrderItemRepository extends JpaRepository<OrderItem, Integer> {
 
+    void deleteByOrder_Id(Integer orderId);
+
     @Query(
             """
             SELECT COALESCE(SUM(oi.price * oi.quantity), 0)
