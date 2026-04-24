@@ -14,8 +14,6 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Integer> {
             SELECT COALESCE(SUM(oi.price * oi.quantity), 0)
             FROM OrderItem oi
             WHERE oi.book.partner.id = :partnerId
-              AND oi.order.status IN (
-                  'Đã giao', 'DELIVERED', 'COMPLETED', 'completed', 'HOÀN TẤT', 'Hoàn thành')
             """)
     Double sumRevenueByPartner(@Param("partnerId") Integer partnerId);
 
@@ -24,8 +22,6 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Integer> {
             SELECT COUNT(DISTINCT oi.order.id)
             FROM OrderItem oi
             WHERE oi.book.partner.id = :partnerId
-              AND oi.order.status IN (
-                  'Đã giao', 'DELIVERED', 'COMPLETED', 'completed', 'HOÀN TẤT', 'Hoàn thành')
             """)
     long countDistinctOrdersByPartner(@Param("partnerId") Integer partnerId);
 }

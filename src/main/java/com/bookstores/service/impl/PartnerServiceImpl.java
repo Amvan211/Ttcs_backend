@@ -19,6 +19,7 @@ import com.bookstores.repository.UserRepository;
 import com.bookstores.service.PartnerService;
 import com.bookstores.service.UserContextService;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -105,8 +106,35 @@ public class PartnerServiceImpl implements PartnerService {
                         .coverImageUrl(req.getCoverImageUrl())
                         .category(cat)
                         .partner(p)
-                        .approvalStatus(DomainConstants.APPROVAL_PENDING)
+                        .approvalStatus(resolveBookApprovalStatus(req.getApprovalStatus()))
                         .build();
+        b = bookRepository.save(b);
+        return BookDTO.fromEntity(b);
+    }
+
+    @Override
+    @Transactional
+    public BookDTO updateBook(Integer bookId, PartnerBookRequest req) {
+        Partner p = currentPartnerOrThrow();
+        var b =
+                bookRepository
+                        .findById(bookId)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
+        if (!b.getPartner().getId().equals(p.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not authorized to update this book");
+        }
+        var cat =
+                categoryRepository
+                        .findById(req.getCategoryId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid category"));
+        b.setTitle(req.getTitle());
+        b.setAuthor(req.getAuthor());
+        b.setPrice(req.getPrice());
+        b.setStockQuantity(req.getStockQuantity());
+        b.setDescription(req.getDescription());
+        b.setCoverImageUrl(req.getCoverImageUrl());
+        b.setCategory(cat);
+        b.setApprovalStatus(resolveBookApprovalStatus(req.getApprovalStatus()));
         b = bookRepository.save(b);
         return BookDTO.fromEntity(b);
     }
@@ -161,5 +189,18 @@ public class PartnerServiceImpl implements PartnerService {
         return partnerRepository
                 .findByUser_Id(user.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Not a partner"));
+    }
+
+    private static String resolveBookApprovalStatus(String input) {
+        if (input == null || input.isBlank()) {
+            return DomainConstants.APPROVAL_APPROVED;
+        }
+        String normalized = input.trim().toUpperCase(Locale.ROOT);
+        if (DomainConstants.APPROVAL_PENDING.equals(normalized)
+                || DomainConstants.APPROVAL_APPROVED.equals(normalized)
+                || DomainConstants.APPROVAL_REJECTED.equals(normalized)) {
+            return normalized;
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "approvalStatus must be PENDING, APPROVED, or REJECTED");
     }
 }

@@ -17,6 +17,8 @@ public interface PartnerService {
 
     BookDTO addBook(PartnerBookRequest req);
 
+    BookDTO updateBook(Integer bookId, PartnerBookRequest req);
+
     OrderDTO updateOrderStatus(Integer orderId, OrderStatusUpdateRequest req);
 
     IncomeStat stats();

@@ -20,5 +20,7 @@ public class PartnerBookRequest {
 
     private String coverImageUrl;
 
+    private String approvalStatus;
+
     @NotNull private Integer categoryId;
 }

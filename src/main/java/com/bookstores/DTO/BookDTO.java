@@ -27,6 +27,7 @@ public class BookDTO {
     private String category;
 
     private Integer stock;
+    private String approvalStatus;
 
     public static BookDTO fromEntity(Book b) {
         if (b == null) {
@@ -40,6 +41,7 @@ public class BookDTO {
                 .coverImage(b.getCoverImageUrl())
                 .category(b.getCategory() != null ? b.getCategory().getCategoryName() : null)
                 .stock(b.getStockQuantity())
+                .approvalStatus(b.getApprovalStatus())
                 .build();
     }
 }

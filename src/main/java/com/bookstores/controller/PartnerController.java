@@ -55,6 +55,13 @@ public class PartnerController {
     }
 
     @PreAuthorize("hasRole('PARTNER')")
+    @PutMapping("/books/{id}")
+    public ResponseEntity<BookDTO> updateBook(
+            @PathVariable Integer id, @Valid @RequestBody PartnerBookRequest request) {
+        return ResponseEntity.ok(partnerService.updateBook(id, request));
+    }
+
+    @PreAuthorize("hasRole('PARTNER')")
     @PutMapping("/orders/{id}/status")
     public ResponseEntity<OrderDTO> updateOrderStatus(
             @PathVariable Integer id, @Valid @RequestBody OrderStatusUpdateRequest request) {
