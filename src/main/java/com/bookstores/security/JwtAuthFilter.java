@@ -29,12 +29,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain)
             throws ServletException, IOException {
         String path = request.getServletPath();
-        if (path.startsWith("/api/recommendations") || path.startsWith("/api/chat") || 
-            path.startsWith("/api/categories") || path.startsWith("/api/auth") || 
-            (path.startsWith("/api/books") && request.getMethod().equals("GET"))) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+        // Parse token if present, even for public endpoints, so optional auth works
 
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (header != null && header.startsWith("Bearer ")) {
