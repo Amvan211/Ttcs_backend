@@ -36,6 +36,10 @@ public class RecommendationServiceImpl implements RecommendationService {
     @Override
     @Transactional(readOnly = true)
     public List<BookDTO> recommendForCurrentUser() {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth.getName() == null || "anonymousUser".equals(auth.getName())) {
+            return new ArrayList<>();
+        }
         var user = userContextService.requireCurrentUser();
         List<UserBehavior> behaviors =
                 userBehaviorRepository.findByUser_IdAndActionTypeInOrderByActionTimeDesc(

@@ -11,6 +11,10 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
 
     List<Book> findByApprovalStatus(String approvalStatus);
 
+    List<Book> findTop3ByApprovalStatusOrderByIdDesc(String approvalStatus);
+
+    List<Book> findTop3ByCategory_IdAndStockQuantityGreaterThanOrderByIdDesc(Integer categoryId, Integer stockQuantity);
+
     List<Book> findByPartner_Id(Integer partnerId);
 
     long countByCategory_Id(Integer categoryId);

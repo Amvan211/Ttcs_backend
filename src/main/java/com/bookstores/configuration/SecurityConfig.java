@@ -39,6 +39,8 @@ public class SecurityConfig {
                                         .requestMatchers(HttpMethod.GET, "/api/categories").permitAll()
                                         .requestMatchers(HttpMethod.GET, "/api/books", "/api/books/*").permitAll()
                                         .requestMatchers(HttpMethod.POST, "/api/books/search-image").permitAll()
+                                        .requestMatchers("/api/chat/**").permitAll()
+                                        .requestMatchers("/api/recommendations", "/api/recommendations/**").permitAll()
                                         .requestMatchers(HttpMethod.DELETE, "/api/partner/**").hasRole("PARTNER")
                                         .requestMatchers(
                                                 "/swagger-ui.html",

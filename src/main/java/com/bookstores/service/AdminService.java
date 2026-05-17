@@ -54,5 +54,11 @@ public interface AdminService {
 
     List<AdminViewModels.ReviewRow> listReviewsForAdmin();
 
+    void deleteReview(Integer id);
+
     AdminViewModels.DashboardOverview dashboardOverview();
+
+    List<com.bookstores.DTO.PartnerDTO> getPendingPartners();
+
+    com.bookstores.DTO.PartnerDTO approvePartner(Integer partnerId);
 }

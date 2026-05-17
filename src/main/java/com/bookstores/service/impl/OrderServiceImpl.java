@@ -21,6 +21,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.bookstores.entity.UserVoucher;
+import com.bookstores.entity.Voucher;
+import com.bookstores.repository.UserVoucherRepository;
+import com.bookstores.repository.VoucherRepository;
+
 @Service
 public class OrderServiceImpl implements OrderService {
 
@@ -29,18 +34,24 @@ public class OrderServiceImpl implements OrderService {
     private final BookRepository bookRepository;
     private final UserBehaviorRepository userBehaviorRepository;
     private final UserContextService userContextService;
+    private final VoucherRepository voucherRepository;
+    private final UserVoucherRepository userVoucherRepository;
 
     public OrderServiceImpl(
             OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
             BookRepository bookRepository,
             UserBehaviorRepository userBehaviorRepository,
-            UserContextService userContextService) {
+            UserContextService userContextService,
+            VoucherRepository voucherRepository,
+            UserVoucherRepository userVoucherRepository) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.bookRepository = bookRepository;
         this.userBehaviorRepository = userBehaviorRepository;
         this.userContextService = userContextService;
+        this.voucherRepository = voucherRepository;
+        this.userVoucherRepository = userVoucherRepository;
     }
 
     @Override
@@ -73,6 +84,51 @@ public class OrderServiceImpl implements OrderService {
             total += book.getPrice() * line.getQuantity();
         }
 
+        Voucher appliedVoucher = null;
+        UserVoucher appliedUserVoucher = null;
+
+        if (req.getVoucherId() != null || (req.getVoucherCode() != null && !req.getVoucherCode().isBlank())) {
+            Voucher v = null;
+            if (req.getVoucherId() != null) {
+                v = voucherRepository.findById(req.getVoucherId()).orElse(null);
+            } else {
+                v = voucherRepository.findByCode(req.getVoucherCode()).orElse(null);
+            }
+
+            if (v != null) {
+                UserVoucher uv = userVoucherRepository.findByUser_IdAndVoucher_Id(user.getId(), v.getId()).orElse(null);
+                if (uv != null && !uv.getIsUsed() && "ACTIVE".equals(v.getStatus())) {
+                    if (v.getEndDate() == null || v.getEndDate().isAfter(LocalDateTime.now())) {
+                        if (v.getMinOrderValue() == null || total >= v.getMinOrderValue()) {
+                            appliedVoucher = v;
+                            appliedUserVoucher = uv;
+                            
+                            double discount = 0;
+                            if ("PERCENTAGE".equals(v.getDiscountType())) {
+                                discount = total * (v.getDiscountValue() / 100.0);
+                                if (v.getMaxDiscountAmount() != null && discount > v.getMaxDiscountAmount()) {
+                                    discount = v.getMaxDiscountAmount();
+                                }
+                            } else {
+                                discount = v.getDiscountValue();
+                            }
+                            
+                            total -= discount;
+                            if (total < 0) total = 0;
+                        } else {
+                            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order total does not meet minimum value for voucher");
+                        }
+                    } else {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Voucher expired");
+                    }
+                } else {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Voucher invalid or already used");
+                }
+            } else {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Voucher not found");
+            }
+        }
+
         Order order =
                 Order.builder()
                         .user(user)
@@ -80,8 +136,18 @@ public class OrderServiceImpl implements OrderService {
                         .totalAmount(total)
                         .status(DomainConstants.ORDER_NEW)
                         .note(req.getNote())
+                        .voucher(appliedVoucher)
                         .build();
         order = orderRepository.save(order);
+
+        if (appliedUserVoucher != null) {
+            appliedUserVoucher.setIsUsed(true);
+            appliedUserVoucher.setUsedAt(LocalDateTime.now());
+            userVoucherRepository.save(appliedUserVoucher);
+            
+            appliedVoucher.setUsedCount((appliedVoucher.getUsedCount() == null ? 0 : appliedVoucher.getUsedCount()) + 1);
+            voucherRepository.save(appliedVoucher);
+        }
 
         List<OrderItem> persisted = new ArrayList<>();
         for (CreateOrderRequest.Line line : req.getItems()) {

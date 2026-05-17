@@ -12,6 +12,10 @@ public class CreateOrderRequest {
 
     private String note;
 
+    private Integer voucherId;
+
+    private String voucherCode;
+
     @NotEmpty @Valid private List<Line> items;
 
     @Data

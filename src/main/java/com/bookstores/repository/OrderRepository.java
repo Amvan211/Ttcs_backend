@@ -27,4 +27,12 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             WHERE o.id = :orderId AND b.partner.id = :partnerId
             """)
     boolean existsByIdAndPartner(@Param("orderId") Integer orderId, @Param("partnerId") Integer partnerId);
+
+    @Query(
+            """
+            SELECT CASE WHEN COUNT(o) > 0 THEN true ELSE false END
+            FROM Order o JOIN o.orderItems oi
+            WHERE o.user.id = :userId AND oi.book.id = :bookId AND LOWER(o.status) IN ('completed', 'delivered', 'hoàn tất', 'hoàn thành', 'đã giao')
+            """)
+    boolean hasUserPurchasedBook(@Param("userId") Integer userId, @Param("bookId") Integer bookId);
 }

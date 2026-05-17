@@ -9,6 +9,7 @@ import com.bookstores.entity.Category;
 import com.bookstores.entity.UserBehavior;
 import com.bookstores.repository.BookRepository;
 import com.bookstores.repository.CategoryRepository;
+import com.bookstores.repository.OrderRepository;
 import com.bookstores.repository.ReviewRepository;
 import com.bookstores.repository.UserBehaviorRepository;
 import com.bookstores.service.BookService;
@@ -32,6 +33,7 @@ public class BookServiceImpl implements BookService {
     private final CategoryRepository categoryRepository;
     private final ReviewRepository reviewRepository;
     private final UserBehaviorRepository userBehaviorRepository;
+    private final OrderRepository orderRepository;
     private final UserContextService userContextService;
 
     public BookServiceImpl(
@@ -39,11 +41,13 @@ public class BookServiceImpl implements BookService {
             CategoryRepository categoryRepository,
             ReviewRepository reviewRepository,
             UserBehaviorRepository userBehaviorRepository,
+            OrderRepository orderRepository,
             UserContextService userContextService) {
         this.bookRepository = bookRepository;
         this.categoryRepository = categoryRepository;
         this.reviewRepository = reviewRepository;
         this.userBehaviorRepository = userBehaviorRepository;
+        this.orderRepository = orderRepository;
         this.userContextService = userContextService;
     }
 
@@ -104,6 +108,37 @@ public class BookServiceImpl implements BookService {
                 "Stub: tìm kiếm theo ảnh bìa chưa được triển khai. File nhận được: " + file.getOriginalFilename(),
                 "books",
                 List.<BookDTO>of());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ReviewDTO> getReviewsByBookId(Integer bookId) {
+        return reviewRepository.findByBook_IdOrderByReviewDateDesc(bookId).stream()
+                .map(ReviewDTO::fromEntity)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public ReviewDTO addReview(com.bookstores.DTO.ReviewUpsertRequest req, String username) {
+        var user = userContextService.requireCurrentUser();
+        boolean hasPurchased = orderRepository.hasUserPurchasedBook(user.getId(), req.getBookId());
+        
+        if (!hasPurchased) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn phải mua sách và đơn hàng phải được giao thành công mới có thể đánh giá.");
+        }
+
+        Book b = bookRepository.findById(req.getBookId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy sách"));
+
+        com.bookstores.entity.Review r = com.bookstores.entity.Review.builder()
+                .book(b)
+                .user(user)
+                .rating(req.getRating())
+                .comment(req.getComment())
+                .reviewDate(LocalDateTime.now())
+                .build();
+        return ReviewDTO.fromEntity(reviewRepository.save(r));
     }
 
     private static boolean isApprovedForDisplay(Book b) {

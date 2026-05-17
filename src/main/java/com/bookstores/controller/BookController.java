@@ -42,4 +42,19 @@ public class BookController {
     public ResponseEntity<BookDetailDTO> detail(@PathVariable Integer id) {
         return ResponseEntity.ok(bookService.getDetail(id));
     }
+
+    @GetMapping("/{id}/reviews")
+    public ResponseEntity<List<com.bookstores.DTO.ReviewDTO>> getReviews(@PathVariable Integer id) {
+        return ResponseEntity.ok(bookService.getReviewsByBookId(id));
+    }
+
+    @PostMapping("/{id}/reviews")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public ResponseEntity<com.bookstores.DTO.ReviewDTO> addReview(
+            @PathVariable Integer id,
+            @jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody com.bookstores.DTO.ReviewUpsertRequest req,
+            org.springframework.security.core.Authentication authentication) {
+        req.setBookId(id);
+        return ResponseEntity.ok(bookService.addReview(req, authentication.getName()));
+    }
 }

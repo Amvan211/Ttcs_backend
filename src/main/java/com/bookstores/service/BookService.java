@@ -13,4 +13,8 @@ public interface BookService {
     BookDetailDTO getDetail(Integer id);
 
     Map<String, Object> searchByImageStub(MultipartFile file);
+
+    List<com.bookstores.DTO.ReviewDTO> getReviewsByBookId(Integer bookId);
+
+    com.bookstores.DTO.ReviewDTO addReview(com.bookstores.DTO.ReviewUpsertRequest req, String username);
 }

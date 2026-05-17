@@ -72,12 +72,7 @@ public class PartnerServiceImpl implements PartnerService {
                         .user(user)
                         .build();
         p = partnerRepository.save(p);
-        var partnerRole =
-                roleRepository
-                        .findByRoleName(DomainConstants.ROLE_PARTNER)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Missing role"));
-        user.setRole(partnerRole);
-        userRepository.save(user);
+        // Do NOT change role to PARTNER here. Admin will approve it.
         return p;
     }
 

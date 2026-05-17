@@ -5,12 +5,15 @@ import com.bookstores.DTO.LoginRequest;
 import com.bookstores.DTO.RegisterRequest;
 import com.bookstores.common.ApiRoleNames;
 import com.bookstores.common.DomainConstants;
+import com.bookstores.entity.Partner;
 import com.bookstores.entity.Role;
 import com.bookstores.entity.User;
+import com.bookstores.repository.PartnerRepository;
 import com.bookstores.repository.RoleRepository;
 import com.bookstores.repository.UserRepository;
 import com.bookstores.security.JwtUtils;
 import com.bookstores.service.AuthService;
+import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,16 +24,19 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final PartnerRepository partnerRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
 
     public AuthServiceImpl(
             UserRepository userRepository,
             RoleRepository roleRepository,
+            PartnerRepository partnerRepository,
             PasswordEncoder passwordEncoder,
             JwtUtils jwtUtils) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.partnerRepository = partnerRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtils = jwtUtils;
     }
@@ -100,5 +106,38 @@ public class AuthServiceImpl implements AuthService {
                 .mail(u.getMail())
                 .avatarUrl(u.getAvatarUrl())
                 .build();
+    }
+
+    @Override
+    public void changePassword(Integer userId, String oldPassword, String newPassword) {
+        User u = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        if (!passwordEncoder.matches(oldPassword, u.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mật khẩu hiện tại không đúng");
+        }
+        u.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(u);
+    }
+
+    @Override
+    public void updateProfile(Integer userId, com.bookstores.DTO.UpdateProfileRequest req) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (req.getFullName() != null) user.setFullName(req.getFullName());
+        if (req.getMail() != null) user.setMail(req.getMail());
+        if (req.getPhone() != null) user.setPhone(req.getPhone());
+
+        userRepository.save(user);
+
+        if (user.getRole() != null && "PARTNER".equalsIgnoreCase(user.getRole().getRoleName())) {
+            Optional<Partner> partnerOpt = partnerRepository.findByUser_Id(user.getId());
+            if (partnerOpt.isPresent()) {
+                Partner partner = partnerOpt.get();
+                if (req.getStoreName() != null) partner.setStoreName(req.getStoreName());
+                if (req.getAddress() != null) partner.setAddress(req.getAddress());
+                partnerRepository.save(partner);
+            }
+        }
     }
 }

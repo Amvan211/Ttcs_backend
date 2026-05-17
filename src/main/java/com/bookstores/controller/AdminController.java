@@ -50,6 +50,12 @@ public class AdminController {
         return ResponseEntity.ok(adminService.listReviewsForAdmin());
     }
 
+    @DeleteMapping("/reviews/{id}")
+    public ResponseEntity<Void> deleteReview(@PathVariable Integer id) {
+        adminService.deleteReview(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/users")
     public ResponseEntity<List<UserDTO>> users() {
         return ResponseEntity.ok(adminService.listUsers());
@@ -148,5 +154,15 @@ public class AdminController {
     public ResponseEntity<Void> deleteOrder(@PathVariable Integer id) {
         adminService.deleteOrder(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/partners/pending")
+    public ResponseEntity<List<com.bookstores.DTO.PartnerDTO>> pendingPartners() {
+        return ResponseEntity.ok(adminService.getPendingPartners());
+    }
+
+    @PutMapping("/partners/{id}/approve")
+    public ResponseEntity<com.bookstores.DTO.PartnerDTO> approvePartner(@PathVariable Integer id) {
+        return ResponseEntity.ok(adminService.approvePartner(id));
     }
 }

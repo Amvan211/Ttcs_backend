@@ -157,6 +157,10 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     public void deleteCategory(Integer id) {
         Category c = categoryRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        long count = bookRepository.countByCategory_Id(id);
+        if (count > 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không thể xóa danh mục này vì đang chứa sách.");
+        }
         categoryRepository.delete(c);
     }
 
@@ -230,7 +234,7 @@ public class AdminServiceImpl implements AdminService {
         o = orderRepository.save(o);
         replaceOrderItems(o, req.getItems());
         return OrderDTO.fromEntity(o);
-    }
+}
 
     @Override
     @Transactional
@@ -258,9 +262,7 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional
     public void deleteOrder(Integer id) {
-        Order o = orderRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        orderItemRepository.deleteByOrder_Id(o.getId());
-        orderRepository.delete(o);
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Không được phép xóa đơn hàng, chỉ có thể cập nhật trạng thái");
     }
 
     @Override
@@ -281,6 +283,13 @@ public class AdminServiceImpl implements AdminService {
                         .reversed())
                 .map(this::toAdminReviewRow)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public void deleteReview(Integer id) {
+        Review r = reviewRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        reviewRepository.delete(r);
     }
 
     @Override
@@ -551,5 +560,33 @@ public class AdminServiceImpl implements AdminService {
         order.setOrderItems(persisted);
         order.setTotalAmount(total);
         orderRepository.save(order);
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.bookstores.DTO.PartnerDTO> getPendingPartners() {
+        return partnerRepository.findAll().stream()
+                .filter(p -> com.bookstores.common.DomainConstants.PARTNER_STORE_PENDING.equals(p.getStatus()))
+                .map(com.bookstores.DTO.PartnerDTO::fromEntity)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public com.bookstores.DTO.PartnerDTO approvePartner(Integer partnerId) {
+        var partner = partnerRepository.findById(partnerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Partner not found"));
+        
+        partner.setStatus("APPROVED");
+        partner = partnerRepository.save(partner);
+        
+        var user = partner.getUser();
+        if (user != null) {
+            var partnerRole = roleRepository.findByRoleName(com.bookstores.common.DomainConstants.ROLE_PARTNER)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Missing role"));
+            user.setRole(partnerRole);
+            userRepository.save(user);
+        }
+        
+        return com.bookstores.DTO.PartnerDTO.fromEntity(partner);
     }
 }
