@@ -44,6 +44,28 @@ public class ChatAIService {
 
         Map<String, Object> requestBody = new HashMap<>();
 
+        // Lấy danh sách sách bán chạy và đánh giá tốt làm dữ liệu thống kê cho AI
+        String statsContext = "";
+        try {
+            List<com.bookstores.entity.Book> topSelling = bookRepository.findTopSellingBooks(org.springframework.data.domain.PageRequest.of(0, 5));
+            if (topSelling != null && !topSelling.isEmpty()) {
+                String sellingTitles = topSelling.stream()
+                        .map(b -> b.getTitle() + " (Tác giả: " + (b.getAuthor() != null ? b.getAuthor() : "Chưa rõ") + " - Giá: " + Math.round(b.getPrice()) + "đ)")
+                        .collect(java.util.stream.Collectors.joining(", "));
+                statsContext += "\n[Thống kê hệ thống - SÁCH ĐƯỢC MUA NHIỀU NHẤT / BÁN CHẠY NHẤT: " + sellingTitles + "]";
+            }
+            
+            List<com.bookstores.entity.Book> topRated = bookRepository.findTopRatedBooks(org.springframework.data.domain.PageRequest.of(0, 5));
+            if (topRated != null && !topRated.isEmpty()) {
+                String ratedTitles = topRated.stream()
+                        .map(b -> b.getTitle() + " (Tác giả: " + (b.getAuthor() != null ? b.getAuthor() : "Chưa rõ") + " - Giá: " + Math.round(b.getPrice()) + "đ)")
+                        .collect(java.util.stream.Collectors.joining(", "));
+                statsContext += "\n[Thống kê hệ thống - SÁCH CÓ ĐÁNH GIÁ TỐT NHẤT: " + ratedTitles + "]";
+            }
+        } catch (Exception e) {
+            log.warn("Lỗi khi lấy thông tin thống kê sách cho chatbot: ", e);
+        }
+
         String ragContext = "";
         if (userId != null) {
             try {
@@ -68,7 +90,7 @@ public class ChatAIService {
         Map<String, Object> systemInstruction = new HashMap<>();
         List<Map<String, Object>> sysPartsList = new ArrayList<>();
         Map<String, Object> sysPart = new HashMap<>();
-        sysPart.put("text", systemPrompt + ragContext);
+        sysPart.put("text", systemPrompt + statsContext + ragContext);
         sysPartsList.add(sysPart);
         systemInstruction.put("parts", sysPartsList);
         requestBody.put("systemInstruction", systemInstruction);

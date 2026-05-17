@@ -49,4 +49,24 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
             """)
     List<Book> recommendByAuthors(
             @Param("authors") Collection<String> authors, @Param("excludeIds") Collection<Integer> excludeIds);
+
+    @Query(
+            """
+            SELECT b FROM Book b
+            LEFT JOIN OrderItem oi ON oi.book.id = b.id
+            WHERE b.approvalStatus = 'APPROVED' OR b.approvalStatus IS NULL
+            GROUP BY b
+            ORDER BY SUM(COALESCE(oi.quantity, 0)) DESC, b.id DESC
+            """)
+    List<Book> findTopSellingBooks(org.springframework.data.domain.Pageable pageable);
+
+    @Query(
+            """
+            SELECT b FROM Book b
+            INNER JOIN Review r ON r.book.id = b.id
+            WHERE b.approvalStatus = 'APPROVED' OR b.approvalStatus IS NULL
+            GROUP BY b
+            ORDER BY AVG(r.rating) DESC, COUNT(r.id) DESC, b.id DESC
+            """)
+    List<Book> findTopRatedBooks(org.springframework.data.domain.Pageable pageable);
 }
