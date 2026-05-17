@@ -36,6 +36,7 @@ public class OrderServiceImpl implements OrderService {
     private final UserContextService userContextService;
     private final VoucherRepository voucherRepository;
     private final UserVoucherRepository userVoucherRepository;
+    private final com.bookstores.service.MailService mailService;
 
     public OrderServiceImpl(
             OrderRepository orderRepository,
@@ -44,7 +45,8 @@ public class OrderServiceImpl implements OrderService {
             UserBehaviorRepository userBehaviorRepository,
             UserContextService userContextService,
             VoucherRepository voucherRepository,
-            UserVoucherRepository userVoucherRepository) {
+            UserVoucherRepository userVoucherRepository,
+            com.bookstores.service.MailService mailService) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.bookRepository = bookRepository;
@@ -52,6 +54,7 @@ public class OrderServiceImpl implements OrderService {
         this.userContextService = userContextService;
         this.voucherRepository = voucherRepository;
         this.userVoucherRepository = userVoucherRepository;
+        this.mailService = mailService;
     }
 
     @Override
@@ -66,8 +69,8 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderDTO create(CreateOrderRequest req) {
-        var user = userContextService.requireCurrentUser();
-        if (DomainConstants.USER_LOCKED.equalsIgnoreCase(user.getStatus())) {
+        var user = userContextService.getCurrentUser();
+        if (user != null && DomainConstants.USER_LOCKED.equalsIgnoreCase(user.getStatus())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account locked");
         }
 
@@ -88,6 +91,9 @@ public class OrderServiceImpl implements OrderService {
         UserVoucher appliedUserVoucher = null;
 
         if (req.getVoucherId() != null || (req.getVoucherCode() != null && !req.getVoucherCode().isBlank())) {
+            if (user == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Vouchers are only available for registered accounts");
+            }
             Voucher v = null;
             if (req.getVoucherId() != null) {
                 v = voucherRepository.findById(req.getVoucherId()).orElse(null);
@@ -136,6 +142,7 @@ public class OrderServiceImpl implements OrderService {
                         .totalAmount(total)
                         .status(DomainConstants.ORDER_NEW)
                         .note(req.getNote())
+                        .email(req.getEmail() != null ? req.getEmail() : (user != null ? user.getMail() : null))
                         .voucher(appliedVoucher)
                         .build();
         order = orderRepository.save(order);
@@ -165,15 +172,25 @@ public class OrderServiceImpl implements OrderService {
                             .build();
             persisted.add(orderItemRepository.save(oi));
 
-            userBehaviorRepository.save(
-                    UserBehavior.builder()
-                            .user(user)
-                            .book(book)
-                            .actionType(DomainConstants.BEHAVIOR_PURCHASE)
-                            .actionTime(LocalDateTime.now())
-                            .build());
+            if (user != null) {
+                userBehaviorRepository.save(
+                        UserBehavior.builder()
+                                .user(user)
+                                .book(book)
+                                .actionType(DomainConstants.BEHAVIOR_PURCHASE)
+                                .actionTime(LocalDateTime.now())
+                                .build());
+            }
         }
         order.setOrderItems(persisted);
+
+        // Send confirmation email asynchronously
+        try {
+            mailService.sendOrderConfirmationEmail(order);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return OrderDTO.fromEntity(order);
     }
 

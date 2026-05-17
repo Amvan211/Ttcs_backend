@@ -7,7 +7,6 @@ import lombok.Data;
 
 @Data
 public class ReviewUpsertRequest {
-    @NotNull(message = "bookId is required")
     private Integer bookId;
 
     @NotNull(message = "rating is required")

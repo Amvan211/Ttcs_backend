@@ -29,6 +29,7 @@ import com.bookstores.repository.RoleRepository;
 import com.bookstores.repository.ReviewRepository;
 import com.bookstores.repository.UserRepository;
 import com.bookstores.service.AdminService;
+import com.bookstores.service.MailService;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
@@ -59,6 +60,7 @@ public class AdminServiceImpl implements AdminService {
     private final OrderItemRepository orderItemRepository;
     private final ReviewRepository reviewRepository;
     private final PasswordEncoder passwordEncoder;
+    private final MailService mailService;
 
     public AdminServiceImpl(
             UserRepository userRepository,
@@ -69,7 +71,8 @@ public class AdminServiceImpl implements AdminService {
             OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
             ReviewRepository reviewRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            MailService mailService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.categoryRepository = categoryRepository;
@@ -79,6 +82,7 @@ public class AdminServiceImpl implements AdminService {
         this.orderItemRepository = orderItemRepository;
         this.reviewRepository = reviewRepository;
         this.passwordEncoder = passwordEncoder;
+        this.mailService = mailService;
     }
 
     @Override
@@ -125,6 +129,16 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     public void deleteUser(Integer id) {
         var u = userRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        
+        // Clean up all foreign key dependencies in safe cascading order
+        userRepository.deleteChatHistories(id);
+        userRepository.deleteUserBehaviorsByUserId(id);
+        userRepository.deleteUserVouchersByUserId(id);
+        userRepository.unlinkReviewsByUserId(id);
+        userRepository.unlinkOrdersByUserId(id);
+        userRepository.unlinkPartnerBooksByUserId(id);
+        userRepository.deletePartnerByUserId(id);
+        
         userRepository.delete(u);
     }
 
@@ -377,6 +391,8 @@ public class AdminServiceImpl implements AdminService {
         if (u != null) {
             String fn = u.getFullName();
             customer = (fn != null && !fn.isBlank()) ? fn : u.getUsername();
+        } else {
+            customer = "Người dùng đã xóa";
         }
         String dateStr =
                 o.getOrderDate() != null ? o.getOrderDate().toLocalDate().format(ORDER_DATE) : "";
@@ -423,7 +439,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     private AdminViewModels.ReviewRow toAdminReviewRow(Review r) {
-        String uname = r.getUser() != null ? r.getUser().getUsername() : "?";
+        String uname = r.getUser() != null ? r.getUser().getUsername() : "Người dùng đã xóa";
         String initials = uname.length() >= 1 ? uname.substring(0, 1).toUpperCase(Locale.ROOT) : "?";
         String bookTitle = r.getBook() != null ? r.getBook().getTitle() : "";
         String dateStr =
@@ -586,6 +602,8 @@ public class AdminServiceImpl implements AdminService {
             user.setRole(partnerRole);
             userRepository.save(user);
         }
+        
+        mailService.sendPartnerApprovalEmail(partner);
         
         return com.bookstores.DTO.PartnerDTO.fromEntity(partner);
     }

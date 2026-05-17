@@ -21,6 +21,7 @@ public class OrderDTO {
     private String note;
     /** Tên hiển thị khách — dùng cho danh sách đơn đối tác (front_end store orders). */
     private String customerName;
+    private String email;
     private List<OrderItemDTO> items;
 
     public static OrderDTO fromEntity(Order o) {
@@ -32,6 +33,8 @@ public class OrderDTO {
         if (o.getUser() != null) {
             String fn = o.getUser().getFullName();
             display = (fn != null && !fn.isBlank()) ? fn : o.getUser().getUsername();
+        } else if (o.getEmail() != null) {
+            display = o.getEmail();
         }
         return OrderDTO.builder()
                 .id(o.getId())
@@ -40,6 +43,7 @@ public class OrderDTO {
                 .status(o.getStatus())
                 .note(o.getNote())
                 .customerName(display)
+                .email(o.getEmail())
                 .items(lines)
                 .build();
     }

@@ -12,6 +12,8 @@ public class CreateOrderRequest {
 
     private String note;
 
+    private String email;
+
     private Integer voucherId;
 
     private String voucherCode;

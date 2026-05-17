@@ -26,4 +26,13 @@ public class UserContextServiceImpl implements UserContextService {
                 .findByUsername(auth.getName())
                 .orElseThrow(() -> new IllegalStateException("User not found"));
     }
+
+    @Override
+    public User getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth.getName() == null || "anonymousUser".equals(auth.getName())) {
+            return null;
+        }
+        return userRepository.findByUsername(auth.getName()).orElse(null);
+    }
 }

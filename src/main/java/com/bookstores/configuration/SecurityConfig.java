@@ -41,6 +41,7 @@ public class SecurityConfig {
                                         .requestMatchers(HttpMethod.POST, "/api/books/search-image").permitAll()
                                         .requestMatchers("/api/chat/**").permitAll()
                                         .requestMatchers("/api/recommendations", "/api/recommendations/**").permitAll()
+                                        .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
                                         .requestMatchers(HttpMethod.DELETE, "/api/partner/**").hasRole("PARTNER")
                                         .requestMatchers(
                                                 "/swagger-ui.html",

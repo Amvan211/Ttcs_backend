@@ -43,6 +43,9 @@ public class Order {
     @Column(columnDefinition = "TEXT")
     private String note;
 
+    @Column(length = 255)
+    private String email;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "voucherID")
     @ToString.Exclude

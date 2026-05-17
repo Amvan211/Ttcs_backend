@@ -16,6 +16,7 @@ import com.bookstores.repository.OrderRepository;
 import com.bookstores.repository.PartnerRepository;
 import com.bookstores.repository.RoleRepository;
 import com.bookstores.repository.UserRepository;
+import com.bookstores.service.MailService;
 import com.bookstores.service.PartnerService;
 import com.bookstores.service.UserContextService;
 import java.util.List;
@@ -36,6 +37,7 @@ public class PartnerServiceImpl implements PartnerService {
     private final OrderItemRepository orderItemRepository;
     private final UserRepository userRepository;
     private final UserContextService userContextService;
+    private final MailService mailService;
 
     public PartnerServiceImpl(
             PartnerRepository partnerRepository,
@@ -45,7 +47,8 @@ public class PartnerServiceImpl implements PartnerService {
             OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
             UserRepository userRepository,
-            UserContextService userContextService) {
+            UserContextService userContextService,
+            MailService mailService) {
         this.partnerRepository = partnerRepository;
         this.roleRepository = roleRepository;
         this.categoryRepository = categoryRepository;
@@ -54,6 +57,7 @@ public class PartnerServiceImpl implements PartnerService {
         this.orderItemRepository = orderItemRepository;
         this.userRepository = userRepository;
         this.userContextService = userContextService;
+        this.mailService = mailService;
     }
 
     @Override
@@ -158,6 +162,11 @@ public class PartnerServiceImpl implements PartnerService {
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         order.setStatus(req.getStatus());
         orderRepository.save(order);
+
+        if (DomainConstants.ORDER_DELIVERED.equalsIgnoreCase(req.getStatus())) {
+            mailService.sendOrderDeliveredEmail(order);
+        }
+
         return OrderDTO.fromEntity(order);
     }
 
