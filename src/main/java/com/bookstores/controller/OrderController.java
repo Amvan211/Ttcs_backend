@@ -2,17 +2,20 @@ package com.bookstores.controller;
 
 import com.bookstores.DTO.CreateOrderRequest;
 import com.bookstores.DTO.OrderDTO;
+import com.bookstores.repository.OrderRepository;
 import com.bookstores.service.OrderService;
+import com.bookstores.service.UserContextService;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.bookstores.service.UserContextService;
-import com.bookstores.repository.OrderRepository;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -39,11 +42,11 @@ public class OrderController {
     }
 
     @GetMapping("/check-purchase")
-    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
-    public ResponseEntity<java.util.Map<String, Boolean>> checkPurchase(@org.springframework.web.bind.annotation.RequestParam Integer bookId) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Map<String, Boolean>> checkPurchase(@RequestParam Integer bookId) {
         var user = userContextService.requireCurrentUser();
         boolean hasPurchased = orderRepository.hasUserPurchasedBook(user.getId(), bookId);
-        System.out.println("CHECK PURCHASE FOR USER " + user.getId() + " BOOK " + bookId + " -> " + hasPurchased);
-        return ResponseEntity.ok(java.util.Map.of("canReview", hasPurchased));
+        return ResponseEntity.ok(Map.of("canReview", hasPurchased));
     }
 }
+

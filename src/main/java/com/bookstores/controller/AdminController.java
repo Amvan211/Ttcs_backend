@@ -9,6 +9,7 @@ import com.bookstores.DTO.BookApproveRequest;
 import com.bookstores.DTO.BookDTO;
 import com.bookstores.DTO.CategoryListDTO;
 import com.bookstores.DTO.OrderDTO;
+import com.bookstores.DTO.PartnerDTO;
 import com.bookstores.DTO.UserDTO;
 import com.bookstores.service.AdminService;
 import jakarta.validation.Valid;
@@ -157,12 +158,12 @@ public class AdminController {
     }
 
     @GetMapping("/partners/pending")
-    public ResponseEntity<List<com.bookstores.DTO.PartnerDTO>> pendingPartners() {
+    public ResponseEntity<List<PartnerDTO>> pendingPartners() {
         return ResponseEntity.ok(adminService.getPendingPartners());
     }
 
     @PutMapping("/partners/{id}/approve")
-    public ResponseEntity<com.bookstores.DTO.PartnerDTO> approvePartner(@PathVariable Integer id) {
+    public ResponseEntity<PartnerDTO> approvePartner(@PathVariable Integer id) {
         return ResponseEntity.ok(adminService.approvePartner(id));
     }
 }

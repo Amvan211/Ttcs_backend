@@ -1,20 +1,20 @@
 package com.bookstores.controller;
 
 import com.bookstores.DTO.AuthResponse;
+import com.bookstores.DTO.ChangePasswordRequest;
 import com.bookstores.DTO.LoginRequest;
 import com.bookstores.DTO.RegisterRequest;
+import com.bookstores.DTO.UpdateProfileRequest;
 import com.bookstores.service.AuthService;
+import com.bookstores.service.UserContextService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.bookstores.DTO.ChangePasswordRequest;
-import com.bookstores.service.UserContextService;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PutMapping;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -48,9 +48,10 @@ public class AuthController {
 
     @PreAuthorize("isAuthenticated()")
     @PutMapping("/profile")
-    public ResponseEntity<String> updateProfile(@RequestBody com.bookstores.DTO.UpdateProfileRequest request) {
+    public ResponseEntity<String> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
         var user = userContextService.requireCurrentUser();
         authService.updateProfile(user.getId(), request);
         return ResponseEntity.ok("Cập nhật hồ sơ thành công");
     }
 }
+

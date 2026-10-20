@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.List;
 import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -80,11 +81,11 @@ public class JwtUtils {
         return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
     }
 
-    public List<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities(String token) {
+    public List<SimpleGrantedAuthority> authorities(String token) {
         String role = getRoleName(token);
         if (role == null || role.isBlank()) {
             return List.of();
         }
-        return List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + role));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role));
     }
 }

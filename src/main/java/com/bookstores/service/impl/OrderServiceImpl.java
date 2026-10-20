@@ -7,10 +7,15 @@ import com.bookstores.entity.Book;
 import com.bookstores.entity.Order;
 import com.bookstores.entity.OrderItem;
 import com.bookstores.entity.UserBehavior;
+import com.bookstores.entity.UserVoucher;
+import com.bookstores.entity.Voucher;
 import com.bookstores.repository.BookRepository;
 import com.bookstores.repository.OrderItemRepository;
 import com.bookstores.repository.OrderRepository;
 import com.bookstores.repository.UserBehaviorRepository;
+import com.bookstores.repository.UserVoucherRepository;
+import com.bookstores.repository.VoucherRepository;
+import com.bookstores.service.MailService;
 import com.bookstores.service.OrderService;
 import com.bookstores.service.UserContextService;
 import java.time.LocalDateTime;
@@ -20,11 +25,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-
-import com.bookstores.entity.UserVoucher;
-import com.bookstores.entity.Voucher;
-import com.bookstores.repository.UserVoucherRepository;
-import com.bookstores.repository.VoucherRepository;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -36,7 +36,7 @@ public class OrderServiceImpl implements OrderService {
     private final UserContextService userContextService;
     private final VoucherRepository voucherRepository;
     private final UserVoucherRepository userVoucherRepository;
-    private final com.bookstores.service.MailService mailService;
+    private final MailService mailService;
 
     public OrderServiceImpl(
             OrderRepository orderRepository,
@@ -46,7 +46,7 @@ public class OrderServiceImpl implements OrderService {
             UserContextService userContextService,
             VoucherRepository voucherRepository,
             UserVoucherRepository userVoucherRepository,
-            com.bookstores.service.MailService mailService) {
+            MailService mailService) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.bookRepository = bookRepository;

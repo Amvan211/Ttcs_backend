@@ -2,13 +2,19 @@ package com.bookstores.controller;
 
 import com.bookstores.DTO.BookDTO;
 import com.bookstores.DTO.BookDetailDTO;
+import com.bookstores.DTO.ReviewDTO;
+import com.bookstores.DTO.ReviewUpsertRequest;
 import com.bookstores.service.BookService;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,17 +50,18 @@ public class BookController {
     }
 
     @GetMapping("/{id}/reviews")
-    public ResponseEntity<List<com.bookstores.DTO.ReviewDTO>> getReviews(@PathVariable Integer id) {
+    public ResponseEntity<List<ReviewDTO>> getReviews(@PathVariable Integer id) {
         return ResponseEntity.ok(bookService.getReviewsByBookId(id));
     }
 
     @PostMapping("/{id}/reviews")
-    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
-    public ResponseEntity<com.bookstores.DTO.ReviewDTO> addReview(
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ReviewDTO> addReview(
             @PathVariable Integer id,
-            @jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody com.bookstores.DTO.ReviewUpsertRequest req,
-            org.springframework.security.core.Authentication authentication) {
+            @Valid @RequestBody ReviewUpsertRequest req,
+            Authentication authentication) {
         req.setBookId(id);
         return ResponseEntity.ok(bookService.addReview(req, authentication.getName()));
     }
 }
+

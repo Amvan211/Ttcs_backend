@@ -9,6 +9,7 @@ import com.bookstores.DTO.BookApproveRequest;
 import com.bookstores.DTO.BookDTO;
 import com.bookstores.DTO.CategoryListDTO;
 import com.bookstores.DTO.OrderDTO;
+import com.bookstores.DTO.PartnerDTO;
 import com.bookstores.DTO.UserDTO;
 import com.bookstores.common.ApiRoleNames;
 import com.bookstores.common.DomainConstants;
@@ -579,25 +580,25 @@ public class AdminServiceImpl implements AdminService {
     }
     @Override
     @Transactional(readOnly = true)
-    public List<com.bookstores.DTO.PartnerDTO> getPendingPartners() {
+    public List<PartnerDTO> getPendingPartners() {
         return partnerRepository.findAll().stream()
-                .filter(p -> com.bookstores.common.DomainConstants.PARTNER_STORE_PENDING.equals(p.getStatus()))
-                .map(com.bookstores.DTO.PartnerDTO::fromEntity)
+                .filter(p -> DomainConstants.PARTNER_STORE_PENDING.equals(p.getStatus()))
+                .map(PartnerDTO::fromEntity)
                 .toList();
     }
 
     @Override
     @Transactional
-    public com.bookstores.DTO.PartnerDTO approvePartner(Integer partnerId) {
+    public PartnerDTO approvePartner(Integer partnerId) {
         var partner = partnerRepository.findById(partnerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Partner not found"));
         
-        partner.setStatus("APPROVED");
+        partner.setStatus(DomainConstants.APPROVAL_APPROVED);
         partner = partnerRepository.save(partner);
         
         var user = partner.getUser();
         if (user != null) {
-            var partnerRole = roleRepository.findByRoleName(com.bookstores.common.DomainConstants.ROLE_PARTNER)
+            var partnerRole = roleRepository.findByRoleName(DomainConstants.ROLE_PARTNER)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Missing role"));
             user.setRole(partnerRole);
             userRepository.save(user);
@@ -605,6 +606,6 @@ public class AdminServiceImpl implements AdminService {
         
         mailService.sendPartnerApprovalEmail(partner);
         
-        return com.bookstores.DTO.PartnerDTO.fromEntity(partner);
+        return PartnerDTO.fromEntity(partner);
     }
 }

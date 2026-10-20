@@ -2,6 +2,8 @@ package com.bookstores.service;
 
 import com.bookstores.DTO.BookDTO;
 import com.bookstores.DTO.BookDetailDTO;
+import com.bookstores.DTO.ReviewDTO;
+import com.bookstores.DTO.ReviewUpsertRequest;
 import java.util.List;
 import java.util.Map;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,7 +16,8 @@ public interface BookService {
 
     Map<String, Object> searchByImageStub(MultipartFile file);
 
-    List<com.bookstores.DTO.ReviewDTO> getReviewsByBookId(Integer bookId);
+    List<ReviewDTO> getReviewsByBookId(Integer bookId);
 
-    com.bookstores.DTO.ReviewDTO addReview(com.bookstores.DTO.ReviewUpsertRequest req, String username);
+    ReviewDTO addReview(ReviewUpsertRequest req, String username);
 }
+

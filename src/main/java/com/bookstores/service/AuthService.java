@@ -3,6 +3,7 @@ package com.bookstores.service;
 import com.bookstores.DTO.AuthResponse;
 import com.bookstores.DTO.LoginRequest;
 import com.bookstores.DTO.RegisterRequest;
+import com.bookstores.DTO.UpdateProfileRequest;
 
 public interface AuthService {
 
@@ -12,5 +13,6 @@ public interface AuthService {
 
     void changePassword(Integer userId, String oldPassword, String newPassword);
 
-    void updateProfile(Integer userId, com.bookstores.DTO.UpdateProfileRequest req);
+    void updateProfile(Integer userId, UpdateProfileRequest req);
 }
+

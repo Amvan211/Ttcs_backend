@@ -8,6 +8,7 @@ import com.bookstores.entity.User;
 import com.bookstores.repository.BookRepository;
 import com.bookstores.repository.ChatHistoryRepository;
 import com.bookstores.repository.UserRepository;
+import com.bookstores.service.ChatAIService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +30,7 @@ public class ChatController {
     private final ChatHistoryRepository chatHistoryRepository;
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
-    private final com.bookstores.service.ChatAIService chatAIService;
+    private final ChatAIService chatAIService;
 
     @PostMapping("/send")
     public ResponseEntity<ChatResponse> sendMessage(@RequestBody ChatRequest request) {

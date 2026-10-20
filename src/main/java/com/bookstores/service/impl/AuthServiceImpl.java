@@ -3,6 +3,7 @@ package com.bookstores.service.impl;
 import com.bookstores.DTO.AuthResponse;
 import com.bookstores.DTO.LoginRequest;
 import com.bookstores.DTO.RegisterRequest;
+import com.bookstores.DTO.UpdateProfileRequest;
 import com.bookstores.common.ApiRoleNames;
 import com.bookstores.common.DomainConstants;
 import com.bookstores.entity.Partner;
@@ -120,7 +121,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void updateProfile(Integer userId, com.bookstores.DTO.UpdateProfileRequest req) {
+    public void updateProfile(Integer userId, UpdateProfileRequest req) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
@@ -130,7 +131,7 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.save(user);
 
-        if (user.getRole() != null && "PARTNER".equalsIgnoreCase(user.getRole().getRoleName())) {
+        if (user.getRole() != null && DomainConstants.ROLE_PARTNER.equalsIgnoreCase(user.getRole().getRoleName())) {
             Optional<Partner> partnerOpt = partnerRepository.findByUser_Id(user.getId());
             if (partnerOpt.isPresent()) {
                 Partner partner = partnerOpt.get();

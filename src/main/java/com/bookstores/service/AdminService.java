@@ -9,6 +9,7 @@ import com.bookstores.DTO.BookApproveRequest;
 import com.bookstores.DTO.BookDTO;
 import com.bookstores.DTO.CategoryListDTO;
 import com.bookstores.DTO.OrderDTO;
+import com.bookstores.DTO.PartnerDTO;
 import com.bookstores.DTO.UserDTO;
 import java.util.List;
 
@@ -58,7 +59,7 @@ public interface AdminService {
 
     AdminViewModels.DashboardOverview dashboardOverview();
 
-    List<com.bookstores.DTO.PartnerDTO> getPendingPartners();
+    List<PartnerDTO> getPendingPartners();
 
-    com.bookstores.DTO.PartnerDTO approvePartner(Integer partnerId);
+    PartnerDTO approvePartner(Integer partnerId);
 }

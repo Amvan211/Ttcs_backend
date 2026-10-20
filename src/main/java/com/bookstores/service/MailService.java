@@ -4,15 +4,16 @@ import com.bookstores.entity.Order;
 import com.bookstores.entity.OrderItem;
 import com.bookstores.entity.Partner;
 import jakarta.mail.internet.MimeMessage;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-
 @Service
+@Slf4j
 public class MailService {
 
     private final JavaMailSender mailSender;
@@ -84,7 +85,7 @@ public class MailService {
             helper.setText(html.toString(), true);
             mailSender.send(message);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Failed to send order confirmation email for order #{}: {}", order.getId(), e.getMessage(), e);
         }
     }
 
@@ -145,7 +146,7 @@ public class MailService {
             helper.setText(html.toString(), true);
             mailSender.send(message);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Failed to send order delivered email for order #{}: {}", order.getId(), e.getMessage(), e);
         }
     }
 
@@ -192,7 +193,7 @@ public class MailService {
             helper.setText(html.toString(), true);
             mailSender.send(message);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Failed to send partner approval email for partner #{}: {}", partner.getId(), e.getMessage(), e);
         }
     }
 }

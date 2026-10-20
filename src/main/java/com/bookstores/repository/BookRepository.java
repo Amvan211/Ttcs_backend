@@ -3,6 +3,7 @@ package com.bookstores.repository;
 import com.bookstores.entity.Book;
 import java.util.Collection;
 import java.util.List;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -58,7 +59,7 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
             GROUP BY b
             ORDER BY SUM(COALESCE(oi.quantity, 0)) DESC, b.id DESC
             """)
-    List<Book> findTopSellingBooks(org.springframework.data.domain.Pageable pageable);
+    List<Book> findTopSellingBooks(Pageable pageable);
 
     @Query(
             """
@@ -68,5 +69,5 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
             GROUP BY b
             ORDER BY AVG(r.rating) DESC, COUNT(r.id) DESC, b.id DESC
             """)
-    List<Book> findTopRatedBooks(org.springframework.data.domain.Pageable pageable);
+    List<Book> findTopRatedBooks(Pageable pageable);
 }

@@ -3,9 +3,11 @@ package com.bookstores.service.impl;
 import com.bookstores.DTO.BookDTO;
 import com.bookstores.DTO.BookDetailDTO;
 import com.bookstores.DTO.ReviewDTO;
+import com.bookstores.DTO.ReviewUpsertRequest;
 import com.bookstores.common.DomainConstants;
 import com.bookstores.entity.Book;
 import com.bookstores.entity.Category;
+import com.bookstores.entity.Review;
 import com.bookstores.entity.UserBehavior;
 import com.bookstores.repository.BookRepository;
 import com.bookstores.repository.CategoryRepository;
@@ -120,7 +122,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional
-    public ReviewDTO addReview(com.bookstores.DTO.ReviewUpsertRequest req, String username) {
+    public ReviewDTO addReview(ReviewUpsertRequest req, String username) {
         var user = userContextService.requireCurrentUser();
         boolean hasPurchased = orderRepository.hasUserPurchasedBook(user.getId(), req.getBookId());
         
@@ -131,7 +133,7 @@ public class BookServiceImpl implements BookService {
         Book b = bookRepository.findById(req.getBookId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy sách"));
 
-        com.bookstores.entity.Review r = com.bookstores.entity.Review.builder()
+        Review r = Review.builder()
                 .book(b)
                 .user(user)
                 .rating(req.getRating())
