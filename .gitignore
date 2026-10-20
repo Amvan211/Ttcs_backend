@@ -35,3 +35,5 @@ build/
 ### Secrets and Logs ###
 .env
 ai_error.txt
+*.pdf
+
